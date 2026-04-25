@@ -1,0 +1,76 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs
+*.log
+scanner_*.log
+logs/
+
+# Output files
+*.json
+*.csv
+*.txt
+*.html
+*.db
+*.sqlite
+scan_results/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+tests/__pycache__/
+tests/.pytest_cache/
+
+# Documentation
+docs/_build/
+
+# Environment variables
+.env
+.env.local

@@ -1,0 +1,48 @@
+"""
+Sistema de logging para debug e monitoramento
+"""
+
+import logging
+import sys
+from datetime import datetime
+
+def setup_logger(name: str = "NetworkScanner", level=logging.INFO) -> logging.Logger:
+    """
+    Configura e retorna um logger
+    
+    Args:
+        name: Nome do logger
+        level: Nível de logging
+        
+    Returns:
+        Logger configurado
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    
+    # Evita múltiplos handlers
+    if logger.handlers:
+        return logger
+    
+    # Handler para console
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    
+    # Handler para arquivo
+    log_filename = f"scanner_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setLevel(logging.DEBUG)
+    
+    # Formato do log
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    console_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+    
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+    
+    return logger

@@ -1,0 +1,11 @@
+# .venvrc - Configurações do ambiente virtual
+export VENV_DIR="venv"
+export PYTHONPATH="${PYTHONPATH}:${PWD}"
+
+# Aliases úteis
+alias activate="source ${VENV_DIR}/bin/activate"
+alias run-scan="sudo ${VENV_DIR}/bin/python main.py"
+alias run-ping="${VENV_DIR}/bin/python main.py --method ping"
+alias test="pytest tests/"
+alias format="black ."
+alias lint="flake8 ."
