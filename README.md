@@ -1,7 +1,7 @@
-# 🌐 Network Scanner - Ferramenta de Escaneamento de Rede
+# 🌐 ZNetScan - Ferramenta de Escaneamento de Rede
 
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPLv3-red.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)]()
 
 Uma ferramenta modular e profissional para escaneamento de rede, desenvolvida em Python. Permite descobrir dispositivos na rede local, identificar MAC addresses, fabricantes e realizar escaneamento de portas.
@@ -45,8 +45,8 @@ brew install arp-scan
 
 ### 1. Clone o repositório
 ```bash
-git clone https://github.com/Zer0G0ld/network-scanner.git
-cd network-scanner
+git clone https://github.com/Zer0G0ld/ZNetScan.git
+cd ZNetScan
 ```
 
 ### 2. Execute o setup automático
@@ -123,14 +123,15 @@ python main.py --mac-info AA:BB:CC:DD:EE:FF
 ## 📁 Estrutura do Projeto
 
 ```
-network_scanner/
+ZNetScan/
 │
 ├── main.py                 # Ponto de entrada principal
-├── run.py                  # Menu interativo
+├── run_with_venv.py        # Executor com venv
 ├── setup_venv.py          # Setup automático
-├── check_installation.py  # Verificação de dependências
 ├── requirements.txt       # Dependências Python
 ├── README.md             # Documentação
+├── LICENSE               # Licença GPLv3
+├── CHANGELOG.md          # Histórico de versões
 │
 ├── scanners/             # Módulos de escaneamento
 │   ├── arp_scanner.py    # Scanner ARP
@@ -204,12 +205,6 @@ PORTA    STATUS     SERVIÇO         BANNER
 sudo python main.py --method arp --output json -f scan_$(date +%Y%m%d).json
 ```
 
-### Exemplo 4: Menu Interativo
-
-```bash
-python run.py
-```
-
 ## 🛠️ Desenvolvimento
 
 ### Configuração do Ambiente de Desenvolvimento
@@ -230,12 +225,6 @@ pytest tests/
 # Type checking
 mypy .
 ```
-
-### Adicionando Novos Recursos
-
-1. **Novo método de scan**: Crie uma classe em `scanners/`
-2. **Novo formato de saída**: Adicione em `output/exporters.py`
-3. **Nova validação**: Implemente em `utils/validators.py`
 
 ## 🐛 Troubleshooting
 
@@ -308,9 +297,9 @@ Contribuições são bem-vindas! Siga estes passos:
 
 ## 📄 Licença
 
-Este projeto está sob a licença GNUv3. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está sob a licença **GNU General Public License v3.0**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## 👥 Autores
+## 👥 Autor
 
 - **Zer0G0ld** - *Desenvolvimento inicial* - [Zer0G0ld](https://github.com/Zer0G0ld)
 
@@ -322,9 +311,7 @@ Este projeto está sob a licença GNUv3. Veja o arquivo [LICENSE](LICENSE) para 
 
 ## 📞 Suporte
 
-- 📧 Email: seu-email@exemplo.com
-- 🐛 Issues: [GitHub Issues](https://github.com/Zer0G0ld/network-scanner/issues)
-- 💬 Discord: [Link do servidor]
+- 🐛 Issues: [GitHub Issues](https://github.com/Zer0G0ld/ZNetScan/issues)
 
 ## 🗺️ Roadmap
 
@@ -341,8 +328,8 @@ Este projeto está sob a licença GNUv3. Veja o arquivo [LICENSE](LICENSE) para 
 
 ```bash
 # 1. Clone e entre na pasta
-git clone https://github.com/Zer0G0ld/network-scanner.git
-cd network-scanner
+git clone https://github.com/Zer0G0ld/ZNetScan.git
+cd ZNetScan
 
 # 2. Setup automático
 python3 setup_venv.py
@@ -369,4 +356,4 @@ python main.py --method ping       # Scan sem sudo
 
 ---
 
-Desenvolvido com 🐍 por Zer0G0ld
+Desenvolvido com 🐍 por **Zer0G0ld**
