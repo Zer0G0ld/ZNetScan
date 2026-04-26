@@ -8,6 +8,7 @@ import threading
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from config.service_probes import TCP_PROBES, UDP_PROBES, VERSION_PATTERNS, TTL_OS_MAPPING
 from utils.logger import setup_logger
 from utils.validators import Validators
 
@@ -459,3 +460,44 @@ class PortScanner:
                         break
         
         return result
+    
+    # Adicione o método de OS Detection:
+    def detect_os_by_ttl(self, ip: str) -> Dict:
+        """
+        Detecta sistema operacional baseado no TTL dos pacotes
+        
+        Args:
+            ip: Endereço IP alvo
+            
+        Returns:
+            Dicionário com SO detectado e confiança
+        """
+        try:
+            import subprocess
+            import re
+            
+            # Executa ping para obter TTL
+            result = subprocess.run(
+                ['ping', '-c', '1', '-W', '1', ip],
+                capture_output=True,
+                text=True
+            )
+            
+            # Extrai TTL da saída
+            ttl_match = re.search(r'ttl=(\d+)', result.stdout, re.IGNORECASE)
+            
+            if ttl_match:
+                ttl = int(ttl_match.group(1))
+                detected_os = TTL_OS_MAPPING.get(ttl, f'Desconhecido (TTL={ttl})')
+                confidence = 'high' if ttl in TTL_OS_MAPPING else 'low'
+                
+                return {
+                    'os': detected_os,
+                    'ttl': ttl,
+                    'confidence': confidence,
+                    'method': 'icmp_ttl'
+                }
+        except:
+            pass
+        
+        return {'os': 'Desconhecido', 'confidence': 'low', 'method': 'none'}
