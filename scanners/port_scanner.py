@@ -73,6 +73,7 @@ class PortScanner:
                 
                 # Tenta obter banner com probes específicos
                 banner = self._get_banner_tcp(sock, port)
+                # Dentro de scan_port_tcp, depois de obter o banner
                 if banner:
                     result['banner'] = banner[:200]
                     # Tenta extrair versão
@@ -80,6 +81,13 @@ class PortScanner:
                     if version:
                         result['version'] = version
                         result['service_detailed'] = f"{result['service']} {version}"
+                    
+                    # NOVO: Análise da resposta HTTP
+                    if result['service'] == 'HTTP':
+                        http_analysis = self._analyze_http_response(banner, result['service'])
+                        result['http_analysis'] = http_analysis
+                        if http_analysis.get('message'):
+                            result['service_detailed'] = http_analysis['message']
                     
         except socket.timeout:
             self.logger.debug(f"Timeout na porta {port}")
@@ -92,6 +100,62 @@ class PortScanner:
                 sock.close()
             
         return result
+
+    def _analyze_http_response(self, banner: str, service: str) -> Dict:
+        """
+        Analisa resposta HTTP para detectar redirecionamentos e serviços especiais
+        
+        Args:
+            banner: Banner do serviço
+            service: Nome do serviço detectado
+            
+        Returns:
+            Dicionário com análise detalhada
+        """
+        analysis = {
+            'type': service,
+            'redirect': None,
+            'needs_auth': False,
+            'server': None,
+            'message': None
+        }
+        
+        if not banner or service != 'HTTP':
+            return analysis
+        
+        # Verifica redirecionamento 301/302/307/308
+        redirect_match = re.search(r'(301|302|307|308).*?Location:\s*(https?://[^\s\r\n]+)', banner, re.IGNORECASE)
+        if redirect_match:
+            analysis['type'] = 'redirect'
+            analysis['redirect'] = redirect_match.group(2)
+            analysis['message'] = f"🔀 Redireciona para {analysis['redirect']}"
+            return analysis
+        
+        # Verifica necessidade de autenticação
+        if re.search(r'401 Unauthorized|403 Forbidden', banner, re.IGNORECASE):
+            analysis['type'] = 'auth_required'
+            analysis['needs_auth'] = True
+            analysis['message'] = '🔒 Requer autenticação'
+            return analysis
+        
+        # Verifica erro do servidor
+        if re.search(r'501 Not Implemented|500 Internal Server Error', banner, re.IGNORECASE):
+            analysis['type'] = 'special_service'
+            analysis['message'] = '⚠️ Serviço não padrão (possível API ou dispositivo embarcado)'
+            return analysis
+        
+        # Extrai servidor
+        server_match = re.search(r'Server:\s*([^\r\n]+)', banner, re.IGNORECASE)
+        if server_match:
+            analysis['server'] = server_match.group(1).strip()
+            if 'upnp' in analysis['server'].lower() or 'miniupnp' in analysis['server'].lower():
+                analysis['type'] = 'upnp'
+                analysis['message'] = '🌐 UPnP - Serviço de descoberta de rede'
+            elif 'router' in analysis['server'].lower() or 'gateway' in analysis['server'].lower():
+                analysis['type'] = 'router_admin'
+                analysis['message'] = '📡 Painel administrativo do roteador'
+        
+        return analysis
     
     def scan_port_udp(self, ip: str, port: int, timeout: float = 2.0) -> Dict:
         """
@@ -424,8 +488,11 @@ class PortScanner:
         report.append("-" * 100)
         
         for port_info in scan_results:
+            # CORREÇÃO: trata banner None
             banner = port_info.get('banner', 'N/A')
-            if len(banner) > 30:
+            if banner is None:
+                banner = 'N/A'
+            elif len(banner) > 30:
                 banner = banner[:27] + "..."
             
             response_time = port_info.get('response_time', 'N/A')
@@ -434,7 +501,11 @@ class PortScanner:
             else:
                 response_time = 'N/A'
             
-            version = port_info.get('version', '-')[:10]
+            version = port_info.get('version', '-')
+            if version is None:
+                version = '-'
+            else:
+                version = str(version)[:10]
             
             report.append(
                 f"{port_info['port']:<8} "
@@ -449,6 +520,7 @@ class PortScanner:
         
         # Adiciona resumo de serviços
         open_ports = [p for p in scan_results if p['status'] == 'open']
+        # Adiciona resumo de serviços (parte modificada)
         if open_ports:
             report.append("\n📊 RESUMO DE SERVIÇOS IDENTIFICADOS:")
             for port_info in open_ports:
@@ -456,10 +528,21 @@ class PortScanner:
                 version = port_info.get('version', '')
                 version_str = f" v{version}" if version else ""
                 banner = port_info.get('banner', 'Sem banner')
-                report.append(f"  🔹 Porta {port_info['port']}/{protocol}: {service}{version_str}")
-                if banner and banner != 'N/A' and len(banner) > 5:
-                    report.append(f"     └─ Banner: {banner[:80]}")
-        
+                
+                # NOVO: Mostra análise HTTP se disponível
+                http_analysis = port_info.get('http_analysis', {})
+                if http_analysis.get('message'):
+                    service_info = f"{service}{version_str} - {http_analysis['message']}"
+                else:
+                    service_info = f"{service}{version_str}"
+                
+                report.append(f"  🔹 Porta {port_info['port']}/{protocol}: {service_info}")
+                if banner and banner != 'N/A' and len(str(banner)) > 5:
+                    report.append(f"     └─ Banner: {str(banner)[:80]}")
+                
+                # NOVO: Mostra redirecionamento se houver
+                if http_analysis.get('redirect'):
+                    report.append(f"     └─ 🔀 Redireciona para: {http_analysis['redirect']}")        
         return "\n".join(report)
     
     def quick_scan(self, ip: str) -> List[Dict]:

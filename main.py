@@ -269,14 +269,14 @@ def port_scan(ip: str, ports_option: str, output_format: str, filename: str):
     
     # Define portas a escanear
     if ports_option == 'common':
-        results = scanner.scan_common_ports(ip)
+        results = scanner.scan_common_ports(ip, 'tcp')  # CORRIGIDO
     elif ports_option.startswith('range:'):
         _, range_str = ports_option.split(':')
         start, end = map(int, range_str.split('-'))
-        results = scanner.scan_range(ip, start, end)
+        results = scanner.scan_range(ip, start, end, 'tcp')  # CORRIGIDO
     else:
         ports = [int(p.strip()) for p in ports_option.split(',')]
-        results = scanner.scan_ports(ip, ports)
+        results = scanner.scan_ports_tcp(ip, ports)  # CORRIGIDO
     
     # Gera relatório
     report = scanner.generate_report(results)
