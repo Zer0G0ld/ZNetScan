@@ -4,7 +4,8 @@ Com suporte a ThreadPoolExecutor, UDP scan e melhorias de performance
 """
 
 import socket
-import threading
+import re
+import subprocess
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -30,18 +31,10 @@ class PortScanner:
             8080: 'HTTP-ALT', 8443: 'HTTPS-ALT', 27017: 'MongoDB',
         }
         
-        # Probes específicos por serviço (banner grabbing avançado)
-        self.service_probes = {
-            'HTTP': [b'HEAD / HTTP/1.0\r\n\r\n', b'GET / HTTP/1.0\r\n\r\n'],
-            'SSH': [b'SSH-2.0-ZNetScan\r\n'],
-            'SMTP': [b'EHLO localhost\r\n', b'HELO localhost\r\n'],
-            'FTP': [b'USER anonymous\r\n', b'HELP\r\n'],
-            'POP3': [b'CAPA\r\n', b'USER test\r\n'],
-            'IMAP': [b'CAPABILITY\r\n', b'HELP\r\n'],
-            'MySQL': [b'\x00\x00\x00\x01\x85\xa2\x1f\x00\x00\x00\x00\x01\x21\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'],
-            'Redis': [b'INFO\r\n', b'PING\r\n'],
-            'MongoDB': [b'\x39\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\xd4\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'],
-        }
+        # Usa os probes do arquivo de configuração
+        self.tcp_probes = TCP_PROBES
+        self.udp_probes = UDP_PROBES
+        self.version_patterns = VERSION_PATTERNS
         
     def scan_port_tcp(self, ip: str, port: int, timeout: float = 1.0) -> Dict:
         """
@@ -61,7 +54,8 @@ class PortScanner:
             'service': self.common_ports.get(port, 'unknown'),
             'status': 'closed',
             'banner': None,
-            'response_time': None
+            'response_time': None,
+            'version': None
         }
         
         sock = None
@@ -78,9 +72,14 @@ class PortScanner:
                 result['response_time'] = round((end_time - start_time).total_seconds() * 1000, 2)
                 
                 # Tenta obter banner com probes específicos
-                banner = self._get_banner_advanced(sock, port)
+                banner = self._get_banner_tcp(sock, port)
                 if banner:
-                    result['banner'] = banner[:200]  # Limita tamanho
+                    result['banner'] = banner[:200]
+                    # Tenta extrair versão
+                    version = self._extract_version(result['service'], banner)
+                    if version:
+                        result['version'] = version
+                        result['service_detailed'] = f"{result['service']} {version}"
                     
         except socket.timeout:
             self.logger.debug(f"Timeout na porta {port}")
@@ -123,9 +122,12 @@ class PortScanner:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.settimeout(timeout)
             
-            # Envia probe vazio (alguns serviços respondem)
+            # Verifica se tem probe específico para UDP
+            service_name = self.common_ports.get(port, '').split('-')[0].upper()
+            probe = self.udp_probes.get(service_name, [b'\x00\x00'])[0]
+            
             start_time = datetime.now()
-            sock.sendto(b'\x00\x00', (ip, port))
+            sock.sendto(probe, (ip, port))
             
             try:
                 data, addr = sock.recvfrom(1024)
@@ -133,7 +135,8 @@ class PortScanner:
                 result['status'] = 'open'
                 result['response_time'] = round((end_time - start_time).total_seconds() * 1000, 2)
                 if data:
-                    result['banner'] = data[:200].decode('utf-8', errors='ignore')
+                    banner = data[:200].decode('utf-8', errors='ignore')
+                    result['banner'] = ''.join(c for c in banner if c.isprintable() or c in '\n\r\t')
             except socket.timeout:
                 # UDP é tricky: timeout pode significar aberto (filtrado) ou fechado
                 result['status'] = 'open|filtered'
@@ -148,7 +151,7 @@ class PortScanner:
             
         return result
     
-    def _get_banner_advanced(self, sock: socket.socket, port: int) -> Optional[str]:
+    def _get_banner_tcp(self, sock: socket.socket, port: int) -> Optional[str]:
         """
         Tenta obter banner usando probes específicos por serviço
         
@@ -166,20 +169,14 @@ class PortScanner:
             service = self.common_ports.get(port, '').split('-')[0].upper()
             
             # Probes específicos para o serviço
-            probes = []
-            
-            if service in self.service_probes:
-                probes = self.service_probes[service]
-            else:
-                # Probes genéricos
-                probes = [
-                    b'\r\n',
-                    b'HEAD / HTTP/1.0\r\n\r\n',
-                    b'HELP\r\n',
-                    b'QUIT\r\n',
-                    b'INFO\r\n',
-                    b'STATUS\r\n'
-                ]
+            probes = self.tcp_probes.get(service, [
+                b'\r\n',
+                b'HEAD / HTTP/1.0\r\n\r\n',
+                b'HELP\r\n',
+                b'QUIT\r\n',
+                b'INFO\r\n',
+                b'STATUS\r\n'
+            ])
             
             # Tenta cada probe
             for probe in probes:
@@ -196,6 +193,41 @@ class PortScanner:
         except Exception as e:
             self.logger.debug(f"Erro no banner grabbing: {e}")
             
+        return None
+    
+    def _extract_version(self, service: str, banner: str) -> Optional[str]:
+        """
+        Extrai versão do serviço a partir do banner
+        
+        Args:
+            service: Nome do serviço
+            banner: Banner do serviço
+            
+        Returns:
+            Versão detectada ou None
+        """
+        patterns = self.version_patterns
+        
+        # Tenta padrões específicos do serviço
+        for pattern_name, pattern in patterns.items():
+            if pattern_name.upper() in service.upper() or pattern_name.upper() in banner.upper():
+                match = re.search(pattern, banner, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+        
+        # Padrões genéricos
+        generic_patterns = [
+            r'(\d+\.\d+\.\d+)',
+            r'(\d+\.\d+)',
+            r'version[:\s]+(\d+\.\d+)',
+            r'v(\d+\.\d+)',
+        ]
+        
+        for pattern in generic_patterns:
+            match = re.search(pattern, banner, re.IGNORECASE)
+            if match:
+                return match.group(1)
+        
         return None
     
     def scan_ports_tcp(self, ip: str, ports: List[int], timeout: float = 1.0, 
@@ -235,7 +267,8 @@ class PortScanner:
                     result = future.result()
                     results.append(result)
                     if result['status'] == 'open':
-                        print(f"  ✓ Porta {result['port']}/TCP aberta - {result['service']}")
+                        version_info = f" [{result.get('version', '')}]" if result.get('version') else ""
+                        print(f"  ✓ Porta {result['port']}/TCP aberta - {result['service']}{version_info}")
                 except Exception as e:
                     port = futures[future]
                     self.logger.debug(f"Erro na porta {port}: {e}")
@@ -326,9 +359,9 @@ class PortScanner:
         print(f"Escaneando intervalo {start_port}-{end_port} ({protocol.upper()}) em {ip}...")
         
         if protocol.lower() == 'tcp':
-            return self.scan_ports_tcp(ip, ports)
+            return self.scan_ports_tcp(ip, ports, max_workers=50)  # Menos threads para range grande
         else:
-            return self.scan_ports_udp(ip, ports)
+            return self.scan_ports_udp(ip, ports, max_workers=20)
     
     def scan_full(self, ip: str, max_workers: int = 100) -> Dict:
         """
@@ -352,9 +385,13 @@ class PortScanner:
         print("\n📡 Scan UDP:")
         udp_results = self.scan_common_ports(ip, 'udp')
         
+        # OS Detection
+        os_info = self.detect_os_by_ttl(ip)
+        
         return {
             'ip': ip,
             'timestamp': datetime.now().isoformat(),
+            'os_detected': os_info,
             'tcp': tcp_results,
             'udp': udp_results,
             'total_open_tcp': len([r for r in tcp_results if r['status'] == 'open']),
@@ -373,37 +410,42 @@ class PortScanner:
             String com relatório formatado
         """
         report = []
-        report.append("=" * 90)
+        report.append("=" * 100)
         report.append(f"RELATÓRIO DE SCAN DE PORTAS {protocol}")
-        report.append("=" * 90)
+        report.append("=" * 100)
         report.append(f"Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         report.append(f"Total de portas escaneadas: {len(scan_results)}")
         report.append(f"Portas abertas: {len([p for p in scan_results if p['status'] == 'open'])}")
         report.append("")
         
         report.append("DETALHES:")
-        report.append("-" * 90)
-        report.append(f"{'PORTA':<8} {'STATUS':<15} {'SERVIÇO':<15} {'TEMPO(ms)':<10} {'BANNER'}")
-        report.append("-" * 90)
+        report.append("-" * 100)
+        report.append(f"{'PORTA':<8} {'STATUS':<15} {'SERVIÇO':<20} {'VERSÃO':<12} {'TEMPO(ms)':<10} {'BANNER'}")
+        report.append("-" * 100)
         
         for port_info in scan_results:
             banner = port_info.get('banner', 'N/A')
-            if len(banner) > 40:
-                banner = banner[:37] + "..."
+            if len(banner) > 30:
+                banner = banner[:27] + "..."
             
             response_time = port_info.get('response_time', 'N/A')
-            if response_time:
+            if response_time and response_time != 'N/A':
                 response_time = f"{response_time}ms"
+            else:
+                response_time = 'N/A'
+            
+            version = port_info.get('version', '-')[:10]
             
             report.append(
                 f"{port_info['port']:<8} "
                 f"{port_info['status']:<15} "
-                f"{port_info['service']:<15} "
+                f"{port_info['service'][:20]:<20} "
+                f"{version:<12} "
                 f"{str(response_time):<10} "
                 f"{banner}"
             )
         
-        report.append("=" * 90)
+        report.append("=" * 100)
         
         # Adiciona resumo de serviços
         open_ports = [p for p in scan_results if p['status'] == 'open']
@@ -411,9 +453,11 @@ class PortScanner:
             report.append("\n📊 RESUMO DE SERVIÇOS IDENTIFICADOS:")
             for port_info in open_ports:
                 service = port_info['service']
+                version = port_info.get('version', '')
+                version_str = f" v{version}" if version else ""
                 banner = port_info.get('banner', 'Sem banner')
-                report.append(f"  🔹 Porta {port_info['port']}/{protocol}: {service}")
-                if banner and banner != 'N/A':
+                report.append(f"  🔹 Porta {port_info['port']}/{protocol}: {service}{version_str}")
+                if banner and banner != 'N/A' and len(banner) > 5:
                     report.append(f"     └─ Banner: {banner[:80]}")
         
         return "\n".join(report)
@@ -434,34 +478,6 @@ class PortScanner:
         print(f"⚡ Scan rápido das 20 portas mais comuns em {ip}...")
         return self.scan_ports_tcp(ip, top_ports, max_workers=20)
     
-    def scan_port_with_detection(self, ip: str, port: int, timeout: float = 2.0) -> Dict:
-        """
-        Scan detalhado de uma porta específica com detecção de serviço
-        """
-        result = self.scan_port_tcp(ip, port, timeout)
-        
-        if result['status'] == 'open':
-            # Tenta identificar versão do serviço
-            if result['banner']:
-                import re
-                # Extrai versão de banners comuns
-                version_patterns = {
-                    'SSH': r'SSH-(\d+\.\d+)',
-                    'Apache': r'Apache/(\d+\.\d+\.\d+)',
-                    'nginx': r'nginx/(\d+\.\d+\.\d+)',
-                    'OpenSSH': r'OpenSSH[_\s](\d+\.\d+)',
-                }
-                
-                for service, pattern in version_patterns.items():
-                    match = re.search(pattern, result['banner'], re.IGNORECASE)
-                    if match:
-                        result['version'] = match.group(1)
-                        result['service_detailed'] = f"{service} {result['version']}"
-                        break
-        
-        return result
-    
-    # Adicione o método de OS Detection:
     def detect_os_by_ttl(self, ip: str) -> Dict:
         """
         Detecta sistema operacional baseado no TTL dos pacotes
@@ -473,14 +489,12 @@ class PortScanner:
             Dicionário com SO detectado e confiança
         """
         try:
-            import subprocess
-            import re
-            
             # Executa ping para obter TTL
             result = subprocess.run(
-                ['ping', '-c', '1', '-W', '1', ip],
+                ['ping', '-c', '1', '-W', '2', ip],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=5
             )
             
             # Extrai TTL da saída
@@ -497,7 +511,44 @@ class PortScanner:
                     'confidence': confidence,
                     'method': 'icmp_ttl'
                 }
-        except:
-            pass
+        except subprocess.TimeoutExpired:
+            self.logger.debug(f"Timeout no ping para {ip}")
+        except Exception as e:
+            self.logger.debug(f"Erro no OS detection: {e}")
         
-        return {'os': 'Desconhecido', 'confidence': 'low', 'method': 'none'}
+        return {'os': 'Desconhecido', 'confidence': 'low', 'method': 'none', 'ttl': None}
+EOFa
+tcp_ip, :ips: scan_range, 
+
+PortScan   def scan_advanced(self, ip: str, ports: List[int] = None) -> Dict:
+        """
+        Scan avançado com deteção de SO e extração de versões
+        """
+        if ports is None:
+            ports = list(self.common_ports.keys())[:50]  # Top 50 portas
+        
+        print(f"\n🔬 Scan avançado em {ip}")
+        print("-" * 50)
+        
+        # OS Detection
+        os_info = self.detect_os_by_ttl(ip)
+        print(f"🖥️  SO Detectado: {os_info['os']} (confiança: {os_info['confidence']})")
+        
+        # Port Scan
+        print(f"\n🔍 Escaneando {len(ports)} portas...")
+        results = self.scan_ports_tcp(ip, ports)
+        
+        # Versões detectadas
+        versions = [r for r in results if r.get('version')]
+        if versions:
+            print(f"\n📌 Versões detectadas:")
+            for r in versions:
+                print(f"   • {r['service']}: {r['version']}")
+        
+        return {
+            'ip': ip,
+            'os': os_info,
+            'open_ports': len([r for r in results if r['status'] == 'open']),
+            'results': results,
+            'versions': versions
+        }
