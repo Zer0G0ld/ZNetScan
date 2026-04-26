@@ -1,17 +1,29 @@
 # 🌐 ZNetScan - Scanner de Rede Inteligente
 
+[![PyPI version](https://badge.fury.io/py/znetscan.svg)](https://badge.fury.io/py/znetscan)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-GPLv3-red.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)]()
+[![Downloads](https://pepy.tech/badge/znetscan)](https://pepy.tech/project/znetscan)
 
 **ZNetScan** é uma ferramenta que descobre todos os dispositivos na sua rede e identifica quais MAC addresses são **reais** (de fábrica) e quais são **falsos** (randomizados por privacidade). Além disso, usa **fingerprint** para reconhecer o mesmo dispositivo mesmo quando ele muda de MAC!
 
 > 🔥 **Diferencial**: Enquanto outros scanners só mostram o MAC, o ZNetScan te diz se você pode confiar nele e identifica dispositivos que se escondem atrás de MACs falsos!
 
+## 📦 Instalação Rápida
+
+```bash
+# Via pip (recomendado)
+pip install znetscan
+
+# Agora use em qualquer lugar!
+znet --method arp
+```
+
 ## 📸 Demonstração
 
 ```bash
-$ python main.py --method arp
+$ znet --method arp
 
 ================================================================================================================
 IP               MAC                  Dispositivo Identificado            Confiança    Visto
@@ -41,20 +53,31 @@ IP               MAC                  Dispositivo Identificado            Confia
 | **Scan de portas** | Verifica portas abertas | Auditoria de segurança |
 | **Exporta resultados** | JSON, CSV, HTML, TXT | Relatórios e integrações |
 
-## 🚀 Instalação (3 passos)
+## 🚀 Instalação detalhada
 
+### Via pip (recomendado para usuários)
 ```bash
-# 1. Instalar arp-scan (necessário para scan rápido)
-sudo apt install arp-scan  # Linux
-brew install arp-scan      # macOS
+# Instalar
+pip install znetscan
 
-# 2. Clonar e entrar no projeto
+# Usar
+znet --method arp
+znet help
+```
+
+### Via git (para desenvolvedores)
+```bash
+# Clonar e entrar no projeto
 git clone https://github.com/Zer0G0ld/ZNetScan.git
 cd ZNetScan
 
-# 3. Setup automático
+# Setup automático
 python3 setup_venv.py
 source venv/bin/activate
+
+# Instalar dependência do sistema (para scan ARP)
+sudo apt install arp-scan  # Linux
+brew install arp-scan      # macOS
 ```
 
 ## 📖 Comandos principais
@@ -62,67 +85,67 @@ source venv/bin/activate
 ### 🔍 Scan de Rede
 ```bash
 # Scan rápido (recomendado) - mostra confiabilidade dos MACs
-sudo python main.py --method arp
+sudo znet --method arp
 
 # Scan alternativo (sem sudo)
-python main.py --method ping
+znet --method ping
 
 # Escanear rede específica
-python main.py --network 192.168.0.0/24 --method arp
+znet --network 192.168.0.0/24 --method arp
 ```
 
 ### 📊 Gerenciamento de Dispositivos (Fingerprint)
 ```bash
 # Listar todos os dispositivos conhecidos
-python main.py --list-devices
+znet --list-devices
 
 # Nomear um dispositivo (aprender quem é)
-python main.py --learn-device dev_20260425_123456 "Celular da Maria"
+znet --learn-device dev_20260425_123456 "Celular da Maria"
 
 # Ver histórico completo de um dispositivo
-python main.py --device-history dev_20260425_123456
+znet --device-history dev_20260425_123456
 
 # Remover um dispositivo do banco
-python main.py --forget-device dev_20260425_123456
+znet --forget-device dev_20260425_123456
 ```
 
 ### 🔌 Scan de Portas
 ```bash
 # Escanear portas de um IP
-python main.py --port-scan 192.168.1.1
+znet --port-scan 192.168.1.1
 
 # Portas específicas
-python main.py --port-scan 192.168.1.1 --ports 22,80,443,3306
+znet --port-scan 192.168.1.1 --ports 22,80,443,3306
 
 # Intervalo de portas
-python main.py --port-scan 192.168.1.1 --ports range:1-1000
+znet --port-scan 192.168.1.1 --ports range:1-1000
 ```
 
 ### ℹ️ Informações e Ajuda
 ```bash
 # Sistema de ajuda interativo
-python main.py help
-python main.py help scan
-python main.py help devices
-python main.py help ports
+znet help
+znet help scan
+znet help devices
+znet help ports
 
 # Analisar um MAC específico
-python main.py --mac-info AA:BB:CC:DD:EE:FF
+znet --mac-info AA:BB:CC:DD:EE:FF
 
 # Mostrar interfaces de rede
-python main.py --interfaces
+znet --interfaces
 ```
 
 ### 📤 Exportação
 ```bash
 # Salvar resultado em JSON
-python main.py --method arp --output json -f minha_rede.json
+znet --method arp --output json -f minha_rede.json
 
 # Salvar em CSV (planilha)
-python main.py --method arp --output csv -f minha_rede.csv
+znet --method arp --output csv -f minha_rede.csv
 
 # Gerar relatório HTML
-python main.py --method arp --output html -f relatorio.html
+znet --method arp --output html -f relatorio.html
 ```
 
 ## 🔍 Entendendo o Fingerprint
@@ -146,14 +169,14 @@ O ZNetScan identifica o mesmo dispositivo por:
 ### Exemplo prático
 ```bash
 # Primeiro scan: iPhone aparece com MAC aleatório
-python main.py --method arp
+znet --method arp
 # Mostra: "📱 Smartphone (desconhecido)"
 
 # Nomeie o dispositivo
-python main.py --learn-device dev_xxx "iPhone da Ana"
+znet --learn-device dev_xxx "iPhone da Ana"
 
 # Segundo scan (dias depois): iPhone com MAC diferente
-python main.py --method arp
+znet --method arp
 # Agora mostra: "iPhone da Ana" ✅ reconhecido!
 ```
 
@@ -200,7 +223,6 @@ ZNetScan/
 
 - [Como funciona a detecção de MAC randomizado?](docs/01_MAC_ADDRESS_EXPLAINED.md)
 - [Arquitetura do ZNetScan](docs/02_HOW_ZNETSCAN_WORKS.md)
-- [Sistema de ajuda interativo](docs/03_HELP_SYSTEM.md)
 
 ## 🛠️ Para desenvolvedores
 
@@ -240,7 +262,7 @@ pytest tests/
 ## 🤝 Contribuir
 
 1. Fork o projeto
-2. Crie uma branch: `git checkout -b minha-feature`
+2. Crie sua branch: `git checkout -b minha-feature`
 3. Commit: `git commit -m 'Adiciona feature'`
 4. Push: `git push origin minha-feature`
 5. Abra um Pull Request
