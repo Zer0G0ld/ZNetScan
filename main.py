@@ -6,7 +6,7 @@ Versão completa com todos os módulos, análise de MAC randomizado e fingerprin
 
 import sys
 import argparse
-from typing import List, Dict  # <-- LINHA ADICIONADA
+from typing import List, Dict
 from scanners.arp_scanner import ARPScanner
 from scanners.ping_scanner import PingScanner
 from scanners.port_scanner import PortScanner
@@ -18,21 +18,27 @@ from network.mac_utils import MACUtils
 from network.device_fingerprint import DeviceFingerprinter
 
 def main():
+    # VERIFICAÇÃO DE HELP ANTES DO PARSE (CRÍTICO)
+    if len(sys.argv) > 1 and sys.argv[1] == 'help':
+        from utils.help import HelpSystem
+        if len(sys.argv) > 2:
+            HelpSystem.show_help(sys.argv[2])
+        else:
+            HelpSystem.show_help()
+        return
+    
     parser = argparse.ArgumentParser(
         description='Network Scanner Tool - Scan IPs, MACs and Ports with Device Fingerprinting',
         epilog='Examples:\n'
-               '  python main.py --method arp\n'
-               '  python main.py --method ping --output json\n'
-               '  python main.py --port-scan 192.168.1.1\n'
-               '  python main.py --interfaces\n'
-               '  python main.py --list-devices\n'
-               '  python main.py --learn-device dev_xxx "Meu Celular"'
+               '  znet --method arp\n'
+               '  znet --method ping --output json\n'
+               '  znet --port-scan 192.168.1.1\n'
+               '  znet --interfaces\n'
+               '  znet --list-devices\n'
+               '  znet --learn-device dev_xxx "Meu Celular"\n'
+               '  znet --version'
     )
     
-    # Adicione no parser, perto dos outros argumentos
-    parser.add_argument('help', nargs='?', default=None,
-                   help='Show help information (use: help, help scan, help devices, etc)')
-
     # Opções de scan
     parser.add_argument('-n', '--network', default='192.168.1.0/24',
                        help='Network range (ex: 192.168.1.0/24)')
@@ -56,7 +62,7 @@ def main():
     parser.add_argument('--mac-info', metavar='MAC',
                        help='Get info about a MAC address')
     
-    # NOVAS opções de fingerprint
+    # Opções de fingerprint
     parser.add_argument('--list-devices', action='store_true',
                        help='List all known devices (fingerprint database)')
     parser.add_argument('--learn-device', nargs=2, metavar=('DEVICE_ID', 'NAME'),
@@ -66,34 +72,29 @@ def main():
     parser.add_argument('--device-history', metavar='DEVICE_ID',
                        help='Show history of a specific device')
     
+    # Versão
+    parser.add_argument('-v', '--version', action='version', version='ZNetScan v1.2.2')
+    
     args = parser.parse_args()
     
     logger = setup_logger()
-
-    if args.help:
-        from utils.help import HelpSystem
-        if args.help == 'help':
-            HelpSystem.show_help()
-        else:
-            HelpSystem.show_help(args.help)
-        return
     
-    # NOVO: Lista dispositivos conhecidos
+    # Lista dispositivos conhecidos
     if args.list_devices:
         list_known_devices()
         return
     
-    # NOVO: Aprende dispositivo
+    # Aprende dispositivo
     if args.learn_device:
         learn_device_name(args.learn_device[0], args.learn_device[1])
         return
     
-    # NOVO: Esquece dispositivo
+    # Esquece dispositivo
     if args.forget_device:
         forget_device(args.forget_device)
         return
     
-    # NOVO: Histórico do dispositivo
+    # Histórico do dispositivo
     if args.device_history:
         show_device_history(args.device_history)
         return
@@ -123,7 +124,7 @@ def list_known_devices():
     
     if not devices:
         print("\n📭 Nenhum dispositivo conhecido ainda.")
-        print("   Execute um scan primeiro: python main.py --method arp")
+        print("   Execute um scan primeiro: znet --method arp")
         return
     
     print("\n" + "=" * 80)
@@ -162,7 +163,6 @@ def forget_device(device_id: str):
         confirm = input(f"⚠️ Tem certeza que quer esquecer '{fp.devices[device_id].get('name', device_id)}'? (s/N): ")
         if confirm.lower() == 's':
             del fp.devices[device_id]
-            # Remove também das sessões
             to_remove = [mac for mac, did in fp.sessions.items() if did == device_id]
             for mac in to_remove:
                 del fp.sessions[mac]
@@ -229,7 +229,6 @@ def get_mac_info(mac_address: str):
     mac_utils = MACUtils()
     fp = DeviceFingerprinter()
     
-    # Obtém análise completa incluindo randomização
     info = mac_utils.get_vendor_info(mac_address, include_reliability=True)
     
     print("\n" + "=" * 60)
@@ -239,7 +238,6 @@ def get_mac_info(mac_address: str):
     print(f"📝 MAC Normalizado: {info['normalized']}")
     print(f"🔑 OUI: {info['oui']}")
     
-    # Verifica se este MAC pertence a algum dispositivo conhecido
     device_id = fp.sessions.get(mac_address.upper())
     if device_id and device_id in fp.devices:
         print(f"\n🔗 Este MAC pertence ao dispositivo:")
@@ -247,19 +245,12 @@ def get_mac_info(mac_address: str):
         print(f"   📛 Nome: {fp.devices[device_id].get('name', 'Unknown')}")
         print(f"   👁️  Visto {fp.devices[device_id].get('seen_count', 0)} vezes")
     
-    # Análise de randomização (se disponível)
     if 'is_randomized' in info:
         print(f"\n🔍 ANÁLISE DE CONFIABILIDADE:")
         print(f"   📌 {info['mac_explanation']}")
         print(f"   🎯 Confiabilidade: {info['reliability']}")
         print(f"   💡 Recomendação: {info['recommendation']}")
         print(f"   📱 Tipo: {info['type']}")
-    else:
-        print(f"\n🏭 Fabricante: {info['manufacturer']}")
-        print(f"📊 Tipo MAC: {info['type']}")
-        print(f"📡 Multicast: {info['is_multicast']}")
-        print(f"📢 Broadcast: {info['is_broadcast']}")
-        print(f"🔗 Unicast: {info['is_unicast']}")
     
     print("\n" + "=" * 60)
 
@@ -267,52 +258,41 @@ def port_scan(ip: str, ports_option: str, output_format: str, filename: str):
     """Executa scan de portas"""
     scanner = PortScanner()
     
-    # Define portas a escanear
     if ports_option == 'common':
-        results = scanner.scan_common_ports(ip, 'tcp')  # CORRIGIDO
+        results = scanner.scan_common_ports(ip, 'tcp')
     elif ports_option.startswith('range:'):
         _, range_str = ports_option.split(':')
         start, end = map(int, range_str.split('-'))
-        results = scanner.scan_range(ip, start, end, 'tcp')  # CORRIGIDO
+        results = scanner.scan_range(ip, start, end, 'tcp')
     else:
         ports = [int(p.strip()) for p in ports_option.split(',')]
-        results = scanner.scan_ports_tcp(ip, ports)  # CORRIGIDO
+        results = scanner.scan_ports_tcp(ip, ports)
     
-    # Gera relatório
     report = scanner.generate_report(results)
     print(report)
     
-    # Exporta se necessário
     if output_format != 'console':
         export_results(results, output_format, filename or f'port_scan_{ip}.{output_format}')
 
 def network_scan(network: str, method: str, output_format: str, filename: str):
     """Executa scan de rede com análise de MAC randomizado e fingerprint"""
     
-    # Inicializa os utilitários
     mac_utils = MACUtils()
     fp = DeviceFingerprinter()
     
-    # Escolhe o scanner
     if method == 'arp':
         scanner = ARPScanner()
     else:
         scanner = PingScanner()
     
-    # Executa o scan
     print(f"Escaneando rede {network} usando {method}...")
     devices = scanner.scan(network)
     
-    # Enriquece os dispositivos com análise de MAC e fingerprint
     for device in devices:
         if 'mac' in device and device['mac']:
-            # 1. Análise do MAC (randomizado ou não)
             mac_info = mac_utils.get_vendor_info(device['mac'], include_reliability=True)
-            
-            # 2. Identificação por fingerprint
             fingerprint = fp.identify_device(device)
             
-            # 3. Combina as informações
             if mac_info.get('is_randomized', False):
                 randomized_type = mac_utils._identify_randomized_device(device['mac'])
                 device['manufacturer'] = f"🔄 {randomized_type}"
@@ -323,18 +303,14 @@ def network_scan(network: str, method: str, output_format: str, filename: str):
                 device['reliability'] = mac_info['reliability']
                 device['is_randomized'] = False
             
-            # 4. Adiciona informações do fingerprint
             device['device_id'] = fingerprint['device_id']
             device['device_name'] = fingerprint['device_info'].get('name', 'Unknown')
             device['fingerprint_confidence'] = fingerprint['confidence']
             device['is_new_device'] = fingerprint['is_new']
-            device['matched_by'] = fingerprint['matched_by']
             device['seen_count'] = fingerprint['device_info'].get('seen_count', 1)
     
-    # Saída no console usando o formatter
     print_enhanced_results(devices, mac_utils, fp)
     
-    # Exporta resultados se necessário
     if output_format != 'console':
         export_devices = []
         for device in devices:
@@ -364,7 +340,6 @@ def print_enhanced_results(devices: List[Dict], mac_utils, fp):
     
     new_count = 0
     for device in devices:
-        # Nome do dispositivo (prioriza fingerprint)
         if device.get('device_name') and device['device_name'] != 'Unknown':
             name = device['device_name'][:33]
         elif device.get('is_randomized', False):
@@ -372,14 +347,12 @@ def print_enhanced_results(devices: List[Dict], mac_utils, fp):
         else:
             name = device.get('manufacturer', 'Unknown')[:33]
         
-        # Ícone de confiança do fingerprint
         conf_icon = {
             'high': '✅ ALTA',
             'medium': '⚠️ MÉDIA',
             'low': '❌ BAIXA'
         }.get(device.get('fingerprint_confidence', 'low'), '❓')
         
-        # Indicador se é novo
         if device.get('is_new_device', False):
             name = f"🆕 {name}"
             new_count += 1
@@ -388,7 +361,6 @@ def print_enhanced_results(devices: List[Dict], mac_utils, fp):
     
     print("=" * 110)
     
-    # Estatísticas
     randomized = sum(1 for d in devices if d.get('is_randomized', False))
     known = sum(1 for d in devices if not d.get('is_new_device', True))
     
@@ -401,7 +373,6 @@ def print_enhanced_results(devices: List[Dict], mac_utils, fp):
         print(f"\n💡 Dica: Use --list-devices para ver todos os dispositivos conhecidos")
         print(f"   Use --learn-device <ID> \"Nome\" para nomear um dispositivo")
     
-    # Limpa sessões antigas
     fp.cleanup_old_sessions()
 
 def export_results(data, format_type: str, filename: str):

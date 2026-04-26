@@ -28,36 +28,36 @@ class HelpSystem:
 📋 COMANDOS PRINCIPAIS:
 
   🔍 SCAN DE REDE:
-    python main.py --method arp              # Scan rápido (requer sudo)
-    python main.py --method ping             # Scan alternativo (sem sudo)
-    python main.py --network 192.168.0.0/24  # Escanear rede específica
+    znet --method arp              # Scan rápido (requer sudo)
+    znet --method ping             # Scan alternativo (sem sudo)
+    znet --network 192.168.0.0/24  # Escanear rede específica
 
   📊 GERENCIAMENTO DE DISPOSITIVOS:
-    python main.py --list-devices            # Listar todos os dispositivos conhecidos
-    python main.py --learn-device <ID> "Nome" # Nomear um dispositivo
-    python main.py --device-history <ID>     # Ver histórico completo
-    python main.py --forget-device <ID>      # Remover dispositivo
+    znet --list-devices            # Listar todos os dispositivos conhecidos
+    znet --learn-device <ID> "Nome" # Nomear um dispositivo
+    znet --device-history <ID>     # Ver histórico completo
+    znet --forget-device <ID>      # Remover dispositivo
 
   🔌 SCAN DE PORTAS:
-    python main.py --port-scan <IP>          # Escanear portas comuns
-    python main.py --port-scan <IP> --ports 22,80,443  # Portas específicas
-    python main.py --port-scan <IP> --ports range:1-1000  # Intervalo
+    znet --port-scan <IP>          # Escanear portas comuns
+    znet --port-scan <IP> --ports 22,80,443  # Portas específicas
+    znet --port-scan <IP> --ports range:1-1000  # Intervalo
 
   ℹ️  INFORMAÇÕES:
-    python main.py --interfaces              # Mostrar interfaces de rede
-    python main.py --mac-info <MAC>          # Analisar um MAC address
-    python main.py help                      # Este menu
-    python main.py help <comando>            # Ajuda específica
+    znet --interfaces              # Mostrar interfaces de rede
+    znet --mac-info <MAC>          # Analisar um MAC address
+    znet help                      # Este menu
+    znet help <comando>            # Ajuda específica
 
   📤 EXPORTAÇÃO:
-    python main.py --method arp --output json -f resultado.json
-    python main.py --method arp --output csv -f resultado.csv
-    python main.py --method arp --output html -f relatorio.html
+    znet --method arp --output json -f resultado.json
+    znet --method arp --output csv -f resultado.csv
+    znet --method arp --output html -f relatorio.html
 
-💡 DICA: Use 'python main.py help scan' para detalhes sobre scan de rede
-       Use 'python main.py help devices' para gerenciar dispositivos
-       Use 'python main.py help ports' para scan de portas
-       Use 'python main.py help export' para exportação
+💡 DICA: Use 'znet help scan' para detalhes sobre scan de rede
+       Use 'znet help devices' para gerenciar dispositivos
+       Use 'znet help ports' para scan de portas
+       Use 'znet help export' para exportação
 
 🔗 Para ajuda completa, visite: https://github.com/Zer0G0ld/ZNetScan
 """)
@@ -69,7 +69,7 @@ class HelpSystem:
             print(COMMANDS[command])
         else:
             print(f"\n❌ Comando '{command}' não encontrado")
-            print("Use 'python main.py help' para ver todos os comandos\n")
+            print("Use 'znet help' para ver todos os comandos\n")
     
     @staticmethod
     def _show_all_help():
@@ -83,7 +83,7 @@ class HelpSystem:
             print(cmd_help)
             print("-" * 80)
 
-# Banco de ajuda para cada comando
+
 COMMANDS: Dict[str, str] = {
     'scan': """
 ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -91,7 +91,7 @@ COMMANDS: Dict[str, str] = {
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
 📌 SINTAXE:
-    python main.py --method <arp|ping> [opções]
+    znet --method <arp|ping> [opções]
 
 📌 PARÂMETROS:
     --method arp      : Scan ARP (rápido, precisa de sudo)
@@ -100,13 +100,13 @@ COMMANDS: Dict[str, str] = {
 
 📌 EXEMPLOS:
     # Scan rápido com ARP
-    sudo python main.py --method arp
+    sudo znet --method arp
 
     # Scan ping sem sudo
-    python main.py --method ping
+    znet --method ping
 
     # Escanear rede específica
-    python main.py --network 192.168.0.0/24 --method arp
+    znet --network 192.168.0.0/24 --method arp
 
 📌 SAÍDA:
     O scanner mostra:
@@ -130,7 +130,7 @@ COMMANDS: Dict[str, str] = {
 📌 COMANDOS:
 
     1. LISTAR DISPOSITIVOS:
-       python main.py --list-devices
+       znet --list-devices
        
        Mostra todos os dispositivos já identificados, incluindo:
        - ID único do dispositivo
@@ -139,13 +139,13 @@ COMMANDS: Dict[str, str] = {
        - Últimos MAC e IP
 
     2. NOMEAR DISPOSITIVO:
-       python main.py --learn-device <ID> "Nome do Dispositivo"
+       znet --learn-device <ID> "Nome do Dispositivo"
        
        Exemplo:
-       python main.py --learn-device dev_20260425_123456 "Celular da Maria"
+       znet --learn-device dev_20260425_123456 "Celular da Maria"
 
     3. VER HISTÓRICO:
-       python main.py --device-history <ID>
+       znet --device-history <ID>
        
        Mostra:
        - Todos os MACs já usados (útil para randomizados)
@@ -154,23 +154,23 @@ COMMANDS: Dict[str, str] = {
        - Contagem total de aparições
 
     4. REMOVER DISPOSITIVO:
-       python main.py --forget-device <ID>
+       znet --forget-device <ID>
        
        Remove o dispositivo do banco de dados.
 
 📌 EXEMPLO PRÁTICO:
     # 1. Faça um scan
-    python main.py --method arp
+    znet --method arp
     
     # 2. Veja os IDs
-    python main.py --list-devices
+    znet --list-devices
     
     # 3. Nomeie os dispositivos
-    python main.py --learn-device dev_20260425_222407_0 "Roteador"
-    python main.py --learn-device dev_20260425_222407_1 "PC João"
+    znet --learn-device dev_20260425_222407_0 "Roteador"
+    znet --learn-device dev_20260425_222407_1 "PC João"
     
     # 4. Veja o histórico de um dispositivo randomizado
-    python main.py --device-history dev_20260425_222407_4
+    znet --device-history dev_20260425_222407_4
 
 📌 POR QUE USAR?
     Dispositivos modernos (iPhone, Android) mudam de MAC a cada rede.
@@ -183,26 +183,26 @@ COMMANDS: Dict[str, str] = {
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
 📌 SINTAXE:
-    python main.py --port-scan <IP> [opções]
+    znet --port-scan <IP> [opções]
 
 📌 PARÂMETROS:
-    --port-sscan <IP>  : Endereço IP alvo
+    --port-scan <IP>   : Endereço IP alvo
     --ports            : Portas a escanear (comum, lista ou intervalo)
 
 📌 EXEMPLOS:
     # Scan das portas mais comuns (top 20)
-    python main.py --port-scan 192.168.1.1
+    znet --port-scan 192.168.1.1
 
     # Portas específicas
-    python main.py --port-scan 192.168.1.1 --ports 22,80,443,3306
+    znet --port-scan 192.168.1.1 --ports 22,80,443,3306
 
     # Intervalo de portas
-    python main.py --port-scan 192.168.1.1 --ports range:1-1000
+    znet --port-scan 192.168.1.1 --ports range:1-1000
 
     # Com saída em JSON
-    python main.py --port-scan 192.168.1.1 --output json -f portas.json
+    znet --port-scan 192.168.1.1 --output json -f portas.json
 
-📌 PORTASTOP 20 MAIS COMUNS:
+📌 PORTAS TOP 20 MAIS COMUNS:
     21(FTP), 22(SSH), 23(Telnet), 25(SMTP), 53(DNS), 80(HTTP),
     110(POP3), 111(RPC), 135(RPC), 139(NetBIOS), 143(IMAP),
     443(HTTPS), 445(SMB), 993(IMAPS), 995(POP3S), 1433(MSSQL),
@@ -221,7 +221,7 @@ COMMANDS: Dict[str, str] = {
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
 📌 SINTAXE:
-    python main.py --method arp --output <formato> -f <arquivo>
+    znet --method arp --output <formato> -f <arquivo>
 
 📌 FORMATOS SUPORTADOS:
     json   : Formato JSON estruturado (ideal para APIs)
@@ -232,16 +232,16 @@ COMMANDS: Dict[str, str] = {
 📌 EXEMPLOS:
 
     # JSON (para programação)
-    python main.py --method arp --output json -f scan.json
+    znet --method arp --output json -f scan.json
 
     # CSV (para planilhas)
-    python main.py --method arp --output csv -f scan.csv
+    znet --method arp --output csv -f scan.csv
 
     # HTML (para relatórios visuais)
-    python main.py --method arp --output html -f relatorio.html
+    znet --method arp --output html -f relatorio.html
 
     # TXT (log simples)
-    python main.py --method arp --output txt -f scan.txt
+    znet --method arp --output txt -f scan.txt
 
 📌 ESTRUTURA DO JSON:
     {
@@ -302,7 +302,7 @@ COMMANDS: Dict[str, str] = {
     # O fingerprint detecta que é o MESMO dispositivo!
     # O sistema pergunta: "Você quer nomear este dispositivo?"
     
-    python main.py --learn-device dev_xxx "iPhone do João"
+    znet --learn-device dev_xxx "iPhone do João"
 
 📌 BENEFÍCIOS:
     ✅ Identifica dispositivos mesmo com MAC randomizado
@@ -317,14 +317,14 @@ COMMANDS: Dict[str, str] = {
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
 📌 COMANDO:
-    python main.py --mac-info <MAC_ADDRESS>
+    znet --mac-info <MAC_ADDRESS>
 
 📌 EXEMPLOS:
     # Analisar MAC de fábrica
-    python main.py --mac-info 3C:58:5D:78:AD:DE
+    znet --mac-info 3C:58:5D:78:AD:DE
 
     # Analisar MAC randomizado
-    python main.py --mac-info 02:F6:E8:0E:1C:3D
+    znet --mac-info 02:F6:E8:0E:1C:3D
 
 📌 O QUE MOSTRA:
     - Se o MAC é de fábrica ou randomizado
@@ -355,47 +355,47 @@ COMMANDS: Dict[str, str] = {
 
 📌 CENÁRIO 1: DESCOBRIR TODOS OS DISPOSITIVOS DA REDE
     # Com sudo (recomendado)
-    sudo python main.py --method arp
+    sudo znet --method arp
     
     # Sem sudo (alternativa)
-    python main.py --method ping
+    znet --method ping
 
 📌 CENÁRIO 2: IDENTIFICAR DISPOSITIVOS QUE MUDAM DE MAC
     # Faça scans em dias diferentes
-    python main.py --method arp
+    znet --method arp
     # Depois de alguns dias, execute novamente
-    python main.py --method arp
+    znet --method arp
     
     # O fingerprint vai reconhecer os mesmos dispositivos!
-    python main.py --list-devices
+    znet --list-devices
 
 📌 CENÁRIO 3: NOMEAR DISPOSITIVOS
     # Veja os IDs
-    python main.py --list-devices
+    znet --list-devices
     
     # Nomeie cada um
-    python main.py --learn-device dev_20260425_222407_0 "Roteador"
-    python main.py --learn-device dev_20260425_222407_1 "PC João"
-    python main.py --learn-device dev_20260425_222407_4 "iPhone Maria"
+    znet --learn-device dev_20260425_222407_0 "Roteador"
+    znet --learn-device dev_20260425_222407_1 "PC João"
+    znet --learn-device dev_20260425_222407_4 "iPhone Maria"
 
 📌 CENÁRIO 4: AUDITORIA DE SEGURANÇA
     # Escaneie portas do servidor
-    python main.py --port-scan 192.168.1.100 --ports 22,80,443,3306
+    znet --port-scan 192.168.1.100 --ports 22,80,443,3306
     
     # Exporte para relatório
-    python main.py --port-scan 192.168.1.100 --output html -f auditoria.html
+    znet --port-scan 192.168.1.100 --output html -f auditoria.html
 
 📌 CENÁRIO 5: MONITORAMENTO CONTÍNUO
     # Script para executar a cada hora
     #!/bin/bash
     while true; do
-        python main.py --method arp --output json -f "scan_$(date +%Y%m%d_%H%M).json"
+        znet --method arp --output json -f "scan_$(date +%Y%m%d_%H%M).json"
         sleep 3600
     done
 
 📌 CENÁRIO 6: VER HISTÓRICO DE UM DISPOSITIVO
     # Descubra quantas vezes um celular apareceu
-    python main.py --device-history dev_20260425_222407_4
+    znet --device-history dev_20260425_222407_4
     
     # Veja todos os MACs que ele já usou
     # Veja horários que costuma aparecer
@@ -413,38 +413,28 @@ COMMANDS: Dict[str, str] = {
 
 📌 ERRO: "Permission denied" no scan ARP
     # Solução: executar com sudo
-    sudo python main.py --method arp
+    sudo znet --method arp
 
-📌 ERRO: "python: command not found" com sudo
-    # Solução: usar caminho completo do venv
-    sudo /home/zero/Codes/ZNetScan/venv/bin/python main.py --method arp
-
-📌 ERRO: Módulo não encontrado
-    # Solução: instalar dependências no venv
-    source venv/bin/activate
-    pip install -r requirements.txt
+📌 ERRO: "znet: command not found"
+    # Solução: instalar o pacote
+    pip install znetscan
 
 📌 ERRO: Scan muito lento
     # Solução: usar método ARP (mais rápido)
-    sudo python main.py --method arp
+    sudo znet --method arp
 
 📌 ERRO: MACs randomizados não identificados
     # Solução: o sistema já identifica automaticamente
-    # Verifique com: python main.py --mac-info <MAC>
+    # Verifique com: znet --mac-info <MAC>
 
 📌 ERRO: Dispositivos duplicados no fingerprint
     # Solução: limpar e re-aprender
-    python main.py --list-devices  # veja os IDs
-    python main.py --forget-device <ID>  # remova duplicados
-
-📌 ERRO: Arquivo de permissão negada
-    # Solução: corrigir permissões
-    sudo rm -f device_fingerprints.json  # remove arquivo com permissão errada
-    python main.py --method arp  # recria com permissão correta
+    znet --list-devices  # veja os IDs
+    znet --forget-device <ID>  # remova duplicados
 
 📌 DICA GERAL:
     Sempre use `--help` para ver opções:
-    python main.py --help
+    znet --help
 """
 }
 
