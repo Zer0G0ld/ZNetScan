@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Network Scanner - Ferramenta modular para escaneamento de rede
-Versão completa com todos os módulos
+Versão completa com todos os módulos e análise de MAC randomizado
 """
 
 import sys
@@ -89,21 +89,34 @@ def print_network_interfaces():
             print(f"  Speed: {info.get('speed')} Mbps")
 
 def get_mac_info(mac_address: str):
-    """Mostra informações detalhadas de um MAC"""
+    """Mostra informações detalhadas de um MAC com análise de randomização"""
     mac_utils = MACUtils()
-    info = mac_utils.get_vendor_info(mac_address)
     
-    print("\n" + "=" * 50)
-    print("INFORMAÇÕES DO MAC ADDRESS")
-    print("=" * 50)
-    print(f"Original: {info['mac']}")
-    print(f"Normalizado: {info['normalized']}")
-    print(f"OUI: {info['oui']}")
-    print(f"Fabricante: {info['manufacturer']}")
-    print(f"Tipo: {info['type']}")
-    print(f"Multicast: {info['is_multicast']}")
-    print(f"Broadcast: {info['is_broadcast']}")
-    print(f"Unicast: {info['is_unicast']}")
+    # Obtém análise completa incluindo randomização
+    info = mac_utils.get_vendor_info(mac_address, include_reliability=True)
+    
+    print("\n" + "=" * 60)
+    print("📡 INFORMAÇÕES DO MAC ADDRESS")
+    print("=" * 60)
+    print(f"\n🔢 MAC Original: {info['mac']}")
+    print(f"📝 MAC Normalizado: {info['normalized']}")
+    print(f"🔑 OUI: {info['oui']}")
+    
+    # Análise de randomização (se disponível)
+    if 'is_randomized' in info:
+        print(f"\n🔍 ANÁLISE DE CONFIABILIDADE:")
+        print(f"   📌 {info['mac_explanation']}")
+        print(f"   🎯 Confiabilidade: {info['reliability']}")
+        print(f"   💡 Recomendação: {info['recommendation']}")
+        print(f"   📱 Tipo: {info['type']}")
+    else:
+        print(f"\n🏭 Fabricante: {info['manufacturer']}")
+        print(f"📊 Tipo MAC: {info['type']}")
+        print(f"📡 Multicast: {info['is_multicast']}")
+        print(f"📢 Broadcast: {info['is_broadcast']}")
+        print(f"🔗 Unicast: {info['is_unicast']}")
+    
+    print("\n" + "=" * 60)
 
 def port_scan(ip: str, ports_option: str, output_format: str, filename: str):
     """Executa scan de portas"""
@@ -129,7 +142,11 @@ def port_scan(ip: str, ports_option: str, output_format: str, filename: str):
         export_results(results, output_format, filename or f'port_scan_{ip}.{output_format}')
 
 def network_scan(network: str, method: str, output_format: str, filename: str):
-    """Executa scan de rede"""
+    """Executa scan de rede com análise de MAC randomizado"""
+    
+    # Inicializa o MACUtils para análise de randomização
+    mac_utils = MACUtils()
+    
     # Escolhe o scanner
     if method == 'arp':
         scanner = ARPScanner()
@@ -140,14 +157,54 @@ def network_scan(network: str, method: str, output_format: str, filename: str):
     print(f"Escaneando rede {network} usando {method}...")
     devices = scanner.scan(network)
     
-    # Saída no console
+    # Enriquece os dispositivos com análise de MAC
+    for device in devices:
+        if 'mac' in device and device['mac']:
+            # Obtém análise completa do MAC
+            mac_info = mac_utils.get_vendor_info(device['mac'], include_reliability=True)
+            
+            # Para MACs randomizados, mostra o tipo identificado
+            if mac_info.get('is_randomized', False):
+                # Tenta identificar o tipo de dispositivo randomizado
+                randomized_type = mac_utils._identify_randomized_device(device['mac'])
+                device['manufacturer'] = f"🔄 {randomized_type}"
+                device['reliability'] = mac_info['reliability']
+                device['is_randomized'] = True
+                device['mac_analysis'] = mac_info['mac_explanation']
+                device['type'] = mac_info.get('type', 'randomized')
+            else:
+                # Para MACs de fábrica, mostra o fabricante real
+                device['manufacturer'] = mac_info['manufacturer']
+                device['reliability'] = mac_info['reliability']
+                device['is_randomized'] = False
+                device['mac_analysis'] = mac_info['mac_explanation']
+                device['type'] = mac_info.get('type', 'hardware')
+    
+    # Saída no console usando o formatter com análise
     if output_format == 'console':
         formatter = ConsoleFormatter()
-        formatter.print_table(devices)
+        # Passa o mac_utils para o formatter
+        formatter.print_table(devices, mac_utils)
+    else:
+        # Para outros formatos, também mostra no console
+        formatter = ConsoleFormatter()
+        formatter.print_table(devices, mac_utils)
     
-    # Exporta resultados
+    # Exporta resultados se necessário
     if output_format != 'console':
-        export_results(devices, output_format, filename or f'scan_{network.replace("/", "_")}.{output_format}')
+        # Prepara dados para exportação (remove campos complexos)
+        export_devices = []
+        for device in devices:
+            export_devices.append({
+                'ip': device.get('ip', 'N/A'),
+                'mac': device.get('mac', 'N/A'),
+                'manufacturer': device.get('manufacturer', 'N/A'),
+                'reliability': device.get('reliability', 'N/A'),
+                'is_randomized': device.get('is_randomized', False),
+                'type': device.get('type', 'unknown'),
+                'status': device.get('status', 'N/A')
+            })
+        export_results(export_devices, output_format, filename or f'scan_{network.replace("/", "_")}.{output_format}')
 
 def export_results(data, format_type: str, filename: str):
     """Exporta resultados para diferentes formatos"""

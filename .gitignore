@@ -15,6 +15,8 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # Distribution / packaging
 .Python
@@ -33,13 +35,15 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Logs
 *.log
 scanner_*.log
 logs/
+*.log.*
 
-# Output files
+# Output files (opcional - comente se quiser versionar)
 *.json
 *.csv
 *.txt
@@ -47,6 +51,8 @@ logs/
 *.db
 *.sqlite
 scan_results/
+!requirements.txt
+!oui_cache.json
 
 # IDE
 .vscode/
@@ -58,19 +64,76 @@ scan_results/
 .project
 .pydevproject
 .settings/
+*.sublime-*
 
 # OS
 .DS_Store
 Thumbs.db
 desktop.ini
+.directory
 
 # Testing
 tests/__pycache__/
 tests/.pytest_cache/
+.pytest_cache/
+.tox/
 
 # Documentation
 docs/_build/
+site/
 
 # Environment variables
 .env
 .env.local
+.env.*.local
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Ruff
+.ruff_cache/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Certificates
+*.pem
+*.crt
+*.key
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Exceções - arquivos que DEVEM ser versionados
+!oui_cache.json
+!requirements.txt
+!docs/*.md

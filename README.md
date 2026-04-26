@@ -1,358 +1,168 @@
-# 🌐 ZNetScan - Ferramenta de Escaneamento de Rede
+# 🌐 ZNetScan - Scanner de Rede Inteligente
 
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-GPLv3-red.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)]()
 
-Uma ferramenta modular e profissional para escaneamento de rede, desenvolvida em Python. Permite descobrir dispositivos na rede local, identificar MAC addresses, fabricantes e realizar escaneamento de portas.
+**ZNetScan** é uma ferramenta que descobre todos os dispositivos na sua rede e identifica quais MAC addresses são **reais** (de fábrica) e quais são **falsos** (randomizados por privacidade).
 
-## ✨ Funcionalidades
+> 🔥 **Diferencial**: Enquanto outros scanners só mostram o MAC, o ZNetScan te diz se você pode confiar nele ou não!
 
-- 🔍 **Descoberta de dispositivos** - Encontre todos os dispositivos na sua rede local
-- 📡 **Múltiplos métodos de scan** - ARP (rápido) e ICMP/Ping (compatível)
-- 🏭 **Identificação de fabricantes** - Descubra qual empresa fabricou o dispositivo pelo MAC
-- 🔌 **Escaneamento de portas** - Detecte portas abertas e serviços em execução
-- 📊 **Múltiplos formatos de saída** - Console, JSON, CSV, TXT, HTML
-- 🎯 **Alta performance** - Scan multi-thread para resultados rápidos
-- 📝 **Logging completo** - Registro detalhado de todas as operações
-- 🐍 **Totalmente modular** - Código organizado e fácil de entender
+## 📸 Demonstração
 
-## 📋 Pré-requisitos
-
-- Python 3.7 ou superior
-- Pip (gerenciador de pacotes Python)
-- Git (opcional, para clonar o repositório)
-
-### Dependências do Sistema
-
-**Linux (Ubuntu/Debian):**
 ```bash
-sudo apt update
-sudo apt install arp-scan -y
+$ sudo python main.py --method arp
+
+====================================================================================================
+| IP           | MAC Address       | Fabricante                         | Confiança |
+----------------------------------------------------------------------------------------------------
+| 192.168.10.1  | 3C:55:5D:78:AD:DE | Sagemcom (roteador)                | ✅ ALTA   |
+| 192.168.10.10 | EC:6G:9A:9E:9A:62 | Arcadyan (computador)              | ✅ ALTA   |
+| 192.168.10.34 | 26:BT:9C:38:81:57 | 🔄 iPhone (MAC randomizado)        | ⚠️ BAIXA  |
+| 192.168.10.38 | 9A:B3:C5:2C:39:7F | 🔄 Android (MAC randomizado)       | ⚠️ BAIXA  |
+====================================================================================================
+
+✅ Dispositivos confiáveis: 2
+⚠️  Dispositivos com MAC falso: 2
+
+💡 Dica: MACs randomizados mudam a cada rede. Não use como identificador único!
 ```
 
-**macOS:**
+## 🎯 O que este scanner faz?
+
+| Recurso | O que significa | Para que serve |
+|---------|----------------|----------------|
+| **Scan ARP** | Descobre dispositivos em segundos | Mapear sua rede rapidamente |
+| **Scan Ping** | Alternativa sem sudo | Quando não tem permissão de root |
+| **Detecta MAC falso** | Identifica iPhones/Androids | Saber se o MAC é confiável |
+| **Scan de portas** | Verifica portas abertas | Auditoria de segurança |
+| **Exporta resultados** | JSON, CSV, HTML, TXT | Relatórios e integrações |
+
+## 🚀 Instalação (3 passos)
+
 ```bash
-brew install arp-scan
-```
+# 1. Instalar arp-scan (necessário para scan rápido)
+sudo apt install arp-scan  # Linux
+brew install arp-scan      # macOS
 
-**Windows:**
-- O método ARP pode não funcionar nativamente
-- Use o método ping: `--method ping`
-- Ou instale [Wireshark](https://www.wireshark.org/) para ferramentas adicionais
-
-## 🚀 Instalação Rápida
-
-### 1. Clone o repositório
-```bash
+# 2. Clonar e entrar no projeto
 git clone https://github.com/Zer0G0ld/ZNetScan.git
 cd ZNetScan
-```
 
-### 2. Execute o setup automático
-```bash
-# Linux/macOS
-chmod +x setup_venv.sh
-./setup_venv.sh
-
-# Windows
-setup_venv.bat
-```
-
-### 3. Ative o ambiente virtual
-```bash
-# Linux/macOS
+# 3. Setup automático
+python3 setup_venv.py
 source venv/bin/activate
-
-# Windows
-venv\Scripts\activate.bat
 ```
 
-### 4. Verifique a instalação
-```bash
-python check_installation.py
-```
-
-## 📖 Como Usar
-
-### Comandos Básicos
+## 📖 Comandos principais
 
 ```bash
-# Ajuda completa
-python main.py --help
-
-# Scan ARP (mais rápido - requer sudo)
+# Scan rápido (recomendado) - mostra confiabilidade dos MACs
 sudo python main.py --method arp
 
-# Scan Ping (mais lento - não requer sudo)
+# Scan alternativo (sem sudo)
 python main.py --method ping
 
-# Escanear rede específica
-python main.py --network 192.168.0.0/24
+# Analisar um MAC específico
+python main.py --mac-info AA:BB:CC:DD:EE:FF
 
-# Scan com saída em JSON
-python main.py --output json -f resultados.json
-```
-
-### Escaneamento de Portas
-
-```bash
-# Scan rápido das portas mais comuns
+# Escanear portas de um IP
 python main.py --port-scan 192.168.1.1
 
-# Scan em intervalo de portas
-python main.py --port-scan 192.168.1.1 --ports range:1-1000
-
-# Scan em portas específicas
-python main.py --port-scan 192.168.1.1 --ports 22,80,443,3306
-
-# Scan com relatório HTML
-python main.py --port-scan 192.168.1.1 --output html -f relatorio.html
+# Salvar resultado em JSON
+sudo python main.py --method arp --output json -f minha_rede.json
 ```
 
-### Utilitários
+## 🔍 Entendendo a saída
 
-```bash
-# Mostrar interfaces de rede disponíveis
-python main.py --interfaces
-
-# Obter informações de um MAC address
-python main.py --mac-info AA:BB:CC:DD:EE:FF
+### ✅ Confiança ALTA (MAC verdadeiro)
+```
+MAC: 3C:58:5D:78:AD:DE
+Segundo caractere: 'C' (0,4,8,C)
+→ Este MAC é GRAVADO no hardware. Não muda. Confiável!
 ```
 
-## 📁 Estrutura do Projeto
+### ⚠️ Confiança BAIXA (MAC falso/randomizado)
+```
+MAC: 26:BC:9C:38:81:57
+Segundo caractere: '6' (2,6,A,E)
+→ Este MAC é CRIADO POR SOFTWARE. Muda a cada rede. Não confie!
+```
+
+### Por que isso acontece?
+
+- **iPhone/Android**: Criaram MACs falsos em 2017 para proteger sua privacidade
+- **Resultado**: Uma pessoa com o mesmo celular aparece como dispositivos diferentes em redes diferentes
+- **Solução**: O ZNetScan identifica esses MACs falsos e avisa você
+
+## 📁 Estrutura do projeto
 
 ```
 ZNetScan/
-│
-├── main.py                 # Ponto de entrada principal
-├── run_with_venv.py        # Executor com venv
-├── setup_venv.py          # Setup automático
-├── requirements.txt       # Dependências Python
-├── README.md             # Documentação
-├── LICENSE               # Licença GPLv3
-├── CHANGELOG.md          # Histórico de versões
-│
-├── scanners/             # Módulos de escaneamento
-│   ├── arp_scanner.py    # Scanner ARP
-│   ├── ping_scanner.py   # Scanner ICMP
-│   └── port_scanner.py   # Scanner de portas
-│
-├── network/              # Funções de rede
-│   ├── ip_utils.py       # Manipulação de IPs
-│   ├── mac_utils.py      # Manipulação de MACs
-│   └── interface.py      # Interfaces de rede
-│
-├── output/               # Saída dos resultados
-│   ├── formatters.py     # Formatadores de saída
-│   └── exporters.py      # Exportadores (JSON, CSV, etc)
-│
-├── utils/                # Utilitários gerais
-│   ├── logger.py         # Sistema de logs
-│   └── validators.py     # Validações
-│
-└── config/               # Configurações
-    └── settings.py       # Parâmetros configuráveis
+├── main.py              # 👉 Comece aqui
+├── network/
+│   └── mac_utils.py     # 🔥 Lógica que detecta MAC falso
+├── scanners/            # Métodos de descoberta
+├── output/              # Formatadores e exportadores
+├── docs/                # Documentação técnica
+└── config/              # Configurações
 ```
 
-## 🎯 Exemplos de Uso
-
-### Exemplo 1: Scan Rápido da Rede Local
+## 🛠️ Para desenvolvedores
 
 ```bash
-sudo python main.py --method arp
-```
-
-**Saída:**
-```
-================================================================================
-| IP Address    | MAC Address         | Manufacturer        | Status |
---------------------------------------------------------------------------------
-| 192.168.1.1   | 00:11:22:33:44:55   | TP-Link             | active |
-| 192.168.1.10  | AA:BB:CC:DD:EE:FF   | Apple Inc.          | active |
-| 192.168.1.15  | 11:22:33:44:55:66   | Samsung Electronics | active |
-================================================================================
-
-Total de dispositivos: 3
-```
-
-### Exemplo 2: Scan de Portas em um Servidor
-
-```bash
-python main.py --port-scan 192.168.1.100 --ports 22,80,443
-```
-
-**Saída:**
-```
-Escaneando 3 portas em 192.168.1.100...
-  ✓ Porta 22 aberta - SSH
-  ✓ Porta 80 aberta - HTTP
-  ✓ Porta 443 aberta - HTTPS
-
-RELATÓRIO DE SCAN DE PORTAS
-================================================================================
-PORTA    STATUS     SERVIÇO         BANNER
---------------------------------------------------------------------------------
-22       open       SSH             SSH-2.0-OpenSSH_8.2p1
-80       open       HTTP            HTTP/1.1 200 OK
-443      open       HTTPS           -
-================================================================================
-```
-
-### Exemplo 3: Exportar Resultados para JSON
-
-```bash
-sudo python main.py --method arp --output json -f scan_$(date +%Y%m%d).json
-```
-
-## 🛠️ Desenvolvimento
-
-### Configuração do Ambiente de Desenvolvimento
-
-```bash
-# Instalar ferramentas de desenvolvimento
-pip install black flake8 pytest mypy
+# Instalar ferramentas extras
+pip install black flake8 pytest
 
 # Formatar código
 black .
 
 # Verificar estilo
 flake8 .
-
-# Executar testes
-pytest tests/
-
-# Type checking
-mypy .
 ```
 
-## 🐛 Troubleshooting
+## 🐛 Problemas comuns
 
-### Problema: "arp-scan: command not found"
-```bash
-# Solução: instalar arp-scan
-sudo apt install arp-scan  # Linux
-brew install arp-scan      # macOS
-```
+| Problema | Solução |
+|----------|---------|
+| `arp-scan: command not found` | `sudo apt install arp-scan` |
+| `Permission denied` | Use `sudo` no scan ARP |
+| Scan muito lento | Use `--method arp` (mais rápido) |
 
-### Problema: "Permission denied" no scan ARP
-```bash
-# Solução: executar com sudo
-sudo python main.py --method arp
-```
+## 📊 Comparação com outras ferramentas
 
-### Problema: Módulo não encontrado
-```bash
-# Solução: instalar dependências no venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+| Ferramenta | Velocidade | Detecta MAC falso | Exporta JSON |
+|------------|------------|-------------------|--------------|
+| **ZNetScan** | ⚡ Rápido | ✅ **SIM** | ✅ Sim |
+| nmap | 🐌 Lento | ❌ Não | ✅ Sim |
+| arp-scan | ⚡ Rápido | ❌ Não | ❌ Não |
+| netdiscover | ⚡ Rápido | ❌ Não | ❌ Não |
 
-### Problema: Scan muito lento
-```bash
-# Solução: usar método ARP (mais rápido)
-sudo python main.py --method arp
+## 🎓 Aprenda mais
 
-# Ou reduzir timeout no código (config/settings.py)
-TIMEOUT = 1  # Reduzir de 2 para 1 segundo
-```
+- [Como funciona a detecção de MAC randomizado?](docs/01_MAC_ADDRESS_EXPLAINED.md)
+- [Arquitetura do ZNetScan](docs/02_HOW_ZNETSCAN_WORKS.md)
 
-### Problema: MACs não aparecem no scan ping
-```bash
-# Solução: Limpar cache ARP e tentar novamente
-sudo ip neigh flush all  # Linux
-arp -d  # Windows (como admin)
-```
-
-## 📊 Performance
-
-| Método | Velocidade | Precisão | Requer Sudo |
-|--------|-----------|----------|-------------|
-| ARP    | ⚡ Muito rápido (segundos) | ✅ Alta | ✅ Sim |
-| Ping   | 🐌 Lento (minutos) | ⚠️ Média | ❌ Não |
-
-## 🔒 Segurança
-
-- O scanner apenas **descobre** dispositivos, não os ataca
-- Use apenas em redes que você possui autorização
-- O método ARP requer `sudo` por questões de segurança do sistema
-- Logs são salvos localmente, não enviam dados para internet
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Siga estes passos:
+## 🤝 Contribuir
 
 1. Fork o projeto
-2. Crie sua branch: `git checkout -b feature/nova-feature`
-3. Commit suas mudanças: `git commit -m 'Adiciona nova feature'`
-4. Push: `git push origin feature/nova-feature`
+2. Crie uma branch: `git checkout -b minha-feature`
+3. Commit: `git commit -m 'Adiciona feature'`
+4. Push: `git push origin minha-feature`
 5. Abra um Pull Request
-
-### Guidelines de Contribuição
-
-- Mantenha o código modular e documentado
-- Adicione testes para novas funcionalidades
-- Siga o estilo de código PEP 8
-- Atualize o README se necessário
 
 ## 📄 Licença
 
-Este projeto está sob a licença **GNU General Public License v3.0**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+**GNU General Public License v3.0** - Use, modifique e distribua livremente.
 
-## 👥 Autor
+## 👤 Autor
 
-- **Zer0G0ld** - *Desenvolvimento inicial* - [Zer0G0ld](https://github.com/Zer0G0ld)
-
-## 🙏 Agradecimentos
-
-- Comunidade Python pelas bibliotecas incríveis
-- Desenvolvedores do `arp-scan` pela ferramenta
-- Todos os contribuidores e testadores
-
-## 📞 Suporte
-
-- 🐛 Issues: [GitHub Issues](https://github.com/Zer0G0ld/ZNetScan/issues)
-
-## 🗺️ Roadmap
-
-- [ ] Interface gráfica (GUI)
-- [ ] Scan de rede wireless (Wi-Fi)
-- [ ] Detecção de sistema operacional
-- [ ] Mapeamento de topologia de rede
-- [ ] Alertas em tempo real
-- [ ] Integração com APIs de threat intelligence
-- [ ] Versão Docker otimizada
-- [ ] Suporte a IPv6 completo
-
-## ⚡ Quick Start (Resumo)
-
-```bash
-# 1. Clone e entre na pasta
-git clone https://github.com/Zer0G0ld/ZNetScan.git
-cd ZNetScan
-
-# 2. Setup automático
-python3 setup_venv.py
-
-# 3. Ativar ambiente
-source venv/bin/activate  # Linux/macOS
-# OU
-venv\Scripts\activate.bat  # Windows
-
-# 4. Executar!
-sudo python main.py --method arp  # Scan rápido
-# OU
-python main.py --method ping       # Scan sem sudo
-```
+**Zer0G0ld** - [GitHub](https://github.com/Zer0G0ld)
 
 ---
 
-⭐ **Se este projeto ajudou você, considere dar uma estrela no GitHub!**
-
-🔗 **Links úteis:**
-- [Documentação Python](https://docs.python.org/3/)
-- [ARP Scan Documentation](https://github.com/royhills/arp-scan)
-- [PEP 8 Style Guide](https://www.python.org/dev/peps/pep-0008/)
+⭐ **Gostou? Dê uma estrela no GitHub!**  
+🐛 **Encontrou um bug?** [Abra uma issue](https://github.com/Zer0G0ld/ZNetScan/issues)
 
 ---
 
