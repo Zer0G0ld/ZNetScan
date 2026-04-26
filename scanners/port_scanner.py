@@ -359,7 +359,7 @@ class PortScanner:
         print(f"Escaneando intervalo {start_port}-{end_port} ({protocol.upper()}) em {ip}...")
         
         if protocol.lower() == 'tcp':
-            return self.scan_ports_tcp(ip, ports, max_workers=50)  # Menos threads para range grande
+            return self.scan_ports_tcp(ip, ports, max_workers=50)
         else:
             return self.scan_ports_udp(ip, ports, max_workers=20)
     
@@ -517,12 +517,17 @@ class PortScanner:
             self.logger.debug(f"Erro no OS detection: {e}")
         
         return {'os': 'Desconhecido', 'confidence': 'low', 'method': 'none', 'ttl': None}
-EOFa
-tcp_ip, :ips: scan_range, 
-
-PortScan   def scan_advanced(self, ip: str, ports: List[int] = None) -> Dict:
+    
+    def scan_advanced(self, ip: str, ports: List[int] = None) -> Dict:
         """
-        Scan avançado com deteção de SO e extração de versões
+        Scan avançado com detecção de SO e extração de versões
+        
+        Args:
+            ip: Endereço IP alvo
+            ports: Lista de portas (opcional, usa top 50 por padrão)
+            
+        Returns:
+            Dicionário com resultados avançados
         """
         if ports is None:
             ports = list(self.common_ports.keys())[:50]  # Top 50 portas

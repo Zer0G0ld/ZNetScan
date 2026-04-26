@@ -50,7 +50,9 @@ IP               MAC                  Dispositivo Identificado            Confia
 | **Detecta MAC falso** | Identifica iPhones/Androids | Saber se o MAC é confiável |
 | **Fingerprint** | Reconhece dispositivos mesmo com MAC diferente | Identificar o mesmo celular em redes diferentes |
 | **Gerencia dispositivos** | Nomeia, lista e vê histórico | Organizar e identificar dispositivos |
-| **Scan de portas** | Verifica portas abertas | Auditoria de segurança |
+| **Scan de portas TCP/UDP** | Verifica portas abertas com banner grabbing | Auditoria de segurança |
+| **CVE Lookup** | Consulta vulnerabilidades conhecidas | Avaliar riscos de segurança |
+| **OS Detection** | Identifica sistema operacional por TTL | Mapear tipos de dispositivos |
 | **Exporta resultados** | JSON, CSV, HTML, TXT | Relatórios e integrações |
 
 ## 🚀 Instalação detalhada
@@ -111,7 +113,7 @@ znet --forget-device dev_20260425_123456
 
 ### 🔌 Scan de Portas
 ```bash
-# Escanear portas de um IP
+# Escanear portas comuns de um IP
 znet --port-scan 192.168.1.1
 
 # Portas específicas
@@ -119,6 +121,9 @@ znet --port-scan 192.168.1.1 --ports 22,80,443,3306
 
 # Intervalo de portas
 znet --port-scan 192.168.1.1 --ports range:1-1000
+
+# Scan UDP
+znet --port-scan 192.168.1.1 --protocol udp
 ```
 
 ### ℹ️ Informações e Ajuda
@@ -128,6 +133,7 @@ znet help
 znet help scan
 znet help devices
 znet help ports
+znet help fingerprint
 
 # Analisar um MAC específico
 znet --mac-info AA:BB:CC:DD:EE:FF
@@ -148,6 +154,27 @@ znet --method arp --output csv -f minha_rede.csv
 znet --method arp --output html -f relatorio.html
 ```
 
+## 🔍 Entendendo os Níveis de Confiança
+
+O ZNetScan possui um **sistema inteligente de confiança** que avalia cada dispositivo:
+
+| Nível | Ícone | Significado | Quando ocorre |
+|-------|-------|-------------|---------------|
+| **ALTA** | ✅ | Dispositivo altamente confiável | Visto 5+ vezes ou MAC de fábrica |
+| **MÉDIA** | ⚠️ | Provavelmente confiável | Visto 2-4 vezes |
+| **BAIXA** | ❌/🆕 | Dispositivo novo ou inconclusivo | Primeira aparição ou MAC randomizado |
+
+### Evolução da Confiança
+```
+Scan 1: 🆕 BAIXA (dispositivo novo)
+  ↓
+Scan 2: ⚠️ MÉDIA (já visto antes)
+  ↓
+Scan 3+: ✅ ALTA (totalmente confiável)
+```
+
+📚 **[Documentação completa do sistema de confiança](docs/04_TRUST_SYSTEM.md)**
+
 ## 🔍 Entendendo o Fingerprint
 
 ### O problema: dispositivos que escondem o MAC
@@ -159,25 +186,18 @@ O ZNetScan identifica o mesmo dispositivo por:
 - **Comportamento de horários** (quando costuma aparecer)
 - **Histórico de IPs** (que rede usa)
 
-### Níveis de confiança do fingerprint
-| Nível | Significado | O que fazer |
-|-------|-------------|-------------|
-| **✅ ALTA** | Mesmo dispositivo com certeza | Pode confiar, nomeie o dispositivo |
-| **⚠️ MÉDIA** | Provavelmente o mesmo | Observe mais alguns dias |
-| **❌ BAIXA** | Dispositivo novo ou inconclusivo | Ainda aprendendo |
-
 ### Exemplo prático
 ```bash
 # Primeiro scan: iPhone aparece com MAC aleatório
 znet --method arp
-# Mostra: "📱 Smartphone (desconhecido)"
+# Mostra: "📱 Smartphone (desconhecido)" - ❌ BAIXA
 
 # Nomeie o dispositivo
 znet --learn-device dev_xxx "iPhone da Ana"
 
 # Segundo scan (dias depois): iPhone com MAC diferente
 znet --method arp
-# Agora mostra: "iPhone da Ana" ✅ reconhecido!
+# Agora mostra: "iPhone da Ana" - ✅ ALTA reconhecido!
 ```
 
 ## 🔍 Entendendo a detecção de MAC falso
@@ -196,11 +216,12 @@ Segundo caractere: '6' (2,6,A,E)
 → Este MAC é CRIADO POR SOFTWARE. Muda a cada rede. Não confie como ID único!
 ```
 
-### Por que isso acontece?
+## 📚 Documentação Completa
 
-- **iPhone/Android**: Criaram MACs falsos em 2017 para proteger sua privacidade
-- **Resultado**: Uma pessoa com o mesmo celular aparece como dispositivos diferentes
-- **Solução**: Use o **sistema de fingerprint** do ZNetScan para identificar!
+- **[Entendendo MAC Randomizado](docs/01_MAC_ADDRESS_EXPLAINED.md)** - Como o ZNetScan detecta MACs falsos
+- **[Arquitetura do Sistema](docs/02_HOW_ZNETSCAN_WORKS.md)** - Como cada módulo funciona
+- **[Sistema de Ajuda](docs/03_HELP_SYSTEM.md)** - Guia interativo de comandos
+- **[Sistema de Confiança](docs/04_TRUST_SYSTEM.md)** - Entenda os níveis ✅ ALTA, ⚠️ MÉDIA, ❌ BAIXA
 
 ## 📁 Estrutura do projeto
 
@@ -210,19 +231,16 @@ ZNetScan/
 ├── network/
 │   ├── mac_utils.py          # 🔥 Detecta MAC falso (bit U/L)
 │   └── device_fingerprint.py # 🆔 Identifica dispositivos que mudam de MAC
-├── scanners/                  # Métodos de descoberta (ARP, Ping, Portas)
+├── scanners/                  # Métodos de descoberta (ARP, Ping, Portas TCP/UDP)
 ├── output/                    # Formatadores e exportadores
 ├── utils/
 │   ├── logger.py             # Sistema de logs com cores
-│   └── help.py               # 📚 Sistema de ajuda interativo
-├── docs/                      # Documentação técnica completa
-└── config/                    # Configurações
+│   ├── help.py               # 📚 Sistema de ajuda interativo
+│   └── cve_lookup.py         # 🛡️ Consulta de vulnerabilidades
+├── config/
+│   └── service_probes.py     # Probes para banner grabbing
+└── docs/                      # Documentação técnica completa
 ```
-
-## 🎓 Aprenda mais
-
-- [Como funciona a detecção de MAC randomizado?](docs/01_MAC_ADDRESS_EXPLAINED.md)
-- [Arquitetura do ZNetScan](docs/02_HOW_ZNETSCAN_WORKS.md)
 
 ## 🛠️ Para desenvolvedores
 
@@ -252,12 +270,12 @@ pytest tests/
 
 ## 📊 Comparação com outras ferramentas
 
-| Ferramenta | Velocidade | Detecta MAC falso | Fingerprint | Exporta JSON | Ajuda interativa |
-|------------|------------|-------------------|-------------|--------------|------------------|
-| **ZNetScan** | ⚡ Rápido | ✅ SIM | ✅ SIM | ✅ Sim | ✅ Sim |
-| nmap | 🐌 Lento | ❌ Não | ❌ Não | ✅ Sim | ❌ Não |
-| arp-scan | ⚡ Rápido | ❌ Não | ❌ Não | ❌ Não | ❌ Não |
-| netdiscover | ⚡ Rápido | ❌ Não | ❌ Não | ❌ Não | ❌ Não |
+| Ferramenta | Velocidade | Detecta MAC falso | Fingerprint | Scan UDP | CVE Lookup | Ajuda interativa |
+|------------|------------|-------------------|-------------|----------|------------|------------------|
+| **ZNetScan** | ⚡ Rápido | ✅ SIM | ✅ SIM | ✅ SIM | ✅ SIM | ✅ Sim |
+| nmap | 🐌 Lento | ❌ Não | ❌ Não | ✅ Sim | ❌ Não | ❌ Não |
+| arp-scan | ⚡ Rápido | ❌ Não | ❌ Não | ❌ Não | ❌ Não | ❌ Não |
+| netdiscover | ⚡ Rápido | ❌ Não | ❌ Não | ❌ Não | ❌ Não | ❌ Não |
 
 ## 🤝 Contribuir
 
