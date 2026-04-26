@@ -131,3 +131,26 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - 🎨 Melhoria visual
 - ⚡ Performance
 - 🔒 Segurança
+
+## [1.2.1] - 2026-04-26
+
+### Corrigido
+- 🐛 `AttributeError` no método `scan_ports` do PortScanner
+- 🐛 `TypeError` com banner None no generate_report
+- 🐛 Validação de IP com porta no argumento `--port-scan`
+
+### Adicionado
+- 🔍 Análise HTTP especializada para detecção de:
+  - Redirecionamentos (301/302/307/308)
+  - Serviços não padrão (501 Not Implemented)
+  - APIs e dispositivos embarcados
+  - UPnP e painéis de roteador
+- 📊 Mensagem descritiva no relatório para serviços especiais
+
+### Melhorado
+- ⚡ Compatibilidade entre métodos de scan
+- 📝 Documentação dos comandos de port scan
+- 🎯 Precisão na identificação de serviços HTTP
+
+### Corrigido
+- Formato correto para scan de porta específica: `--port-scan IP --ports PORTA`
