@@ -4,7 +4,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-GPLv3-red.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)]()
-[![Downloads](https://pepy.tech/badge/znetscan)](https://pepy.tech/project/znetscan)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/znetscan?label=Downloads&logo=python&logoColor=white)](https://pypi.org/project/znetscan/)
 
 **ZNetScan** é uma ferramenta que descobre todos os dispositivos na sua rede e identifica quais MAC addresses são **reais** (de fábrica) e quais são **falsos** (randomizados por privacidade). Além disso, usa **fingerprint** para reconhecer o mesmo dispositivo mesmo quando ele muda de MAC!
 
