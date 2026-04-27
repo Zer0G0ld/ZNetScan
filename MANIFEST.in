@@ -3,3 +3,10 @@ include LICENSE
 include CHANGELOG.md
 recursive-include docs *.md
 recursive-include config *.py
+
+# Core engine C/ASM
+recursive-include core *.c
+recursive-include core *.asm
+recursive-include core *.so
+recursive-include core *.h
+include core/Makefile
