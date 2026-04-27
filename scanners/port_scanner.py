@@ -10,6 +10,7 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from config.service_probes import TCP_PROBES, UDP_PROBES, VERSION_PATTERNS, TTL_OS_MAPPING
+from core import ZNetCore
 from utils.logger import setup_logger
 from utils.validators import Validators
 
@@ -18,6 +19,7 @@ class PortScanner:
     
     def __init__(self):
         self.logger = setup_logger()
+        self.core = ZNetCore()
         self.open_ports = []
         self.scan_results = []
         
@@ -35,6 +37,23 @@ class PortScanner:
         self.tcp_probes = TCP_PROBES
         self.udp_probes = UDP_PROBES
         self.version_patterns = VERSION_PATTERNS
+
+    def scan_ports_tcp_fast(self, ip: str, ports: List[int]) -> List[Dict]:
+        """Versão acelerada com motor C/ASM"""
+        results = self.core.syn_scan(ip, ports)
+        
+        if results is None:
+            # Fallback para Python
+            return self.scan_ports_tcp_python(ip, ports)
+        
+        # Enriquece resultados com banner grabbing (Python)
+        for result in results:
+            if result['status'] == 'open':
+                banner = self._get_banner_tcp_fallback(ip, result['port'])
+                if banner:
+                    result['banner'] = banner
+        
+        return results
         
     def scan_port_tcp(self, ip: str, port: int, timeout: float = 1.0) -> Dict:
         """
