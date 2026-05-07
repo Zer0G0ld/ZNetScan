@@ -1,10 +1,60 @@
 #!/usr/bin/env python3
 """
 Setup para instalar ZNetScan como comando global
+Com suporte a compilação nativa para x86_64 e ARM64
 """
 
 from setuptools import setup, find_packages
+from setuptools.command.install import install
+from setuptools.command.develop import develop
+import subprocess
 import os
+import sys
+import platform
+
+# Função para compilar o core C/ASM
+def build_native_core():
+    """Compila o motor C/ASM usando o Makefile"""
+    arch = platform.machine()
+    print(f"🔧 Detectada arquitetura: {arch}")
+    print("🔧 Compilando motor C/ASM do ZNetScan...")
+    
+    try:
+        # Limpa compilações anteriores
+        subprocess.check_call(['make', '-C', 'core', 'clean'], 
+                            stdout=subprocess.DEVNULL, 
+                            stderr=subprocess.DEVNULL)
+        
+        # Compila
+        subprocess.check_call(['make', '-C', 'core', 'all'])
+        
+        # Instala a lib na raiz
+        subprocess.check_call(['make', '-C', 'core', 'install'])
+        
+        print("✅ Motor C/ASM compilado com sucesso!")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Falha na compilação nativa: {e}")
+        print("   O ZNetScan usará fallback em Python (mais lento)")
+        return False
+    except FileNotFoundError:
+        print("⚠️ 'make' não encontrado. Instale build-essential ou binutils")
+        print("   Ubuntu/Debian: sudo apt install build-essential")
+        print("   Termux: pkg install binutils make clang")
+        return False
+
+# Comando personalizado para instalação
+class CustomInstallCommand(install):
+    def run(self):
+        build_native_core()
+        install.run(self)
+
+# Comando personalizado para desenvolvimento
+class CustomDevelopCommand(develop):
+    def run(self):
+        build_native_core()
+        develop.run(self)
 
 # Lê o README para usar como descrição longa
 def read_long_description():
@@ -22,6 +72,7 @@ def read_long_description():
 - 🔍 Detecta MACs falsos (randomizados por privacidade)
 - 🆔 Fingerprint para identificar mesmo com MAC mudando
 - 📊 Gerenciamento de dispositivos com histórico
+- ⚡ Motor C/ASM otimizado para x86_64 e ARM64
 
 ## Instalação
 ```bash
@@ -40,9 +91,9 @@ znet help
 
 setup(
     name="znetscan",
-    version="1.3.0",  # Atualizado para nova versão
+    version="2.0.0rc3",  # Versão Release Candidate
     author="Zer0G0ld",
-    author_email="zer0g0ld@proton.me",  # Coloque um email real se quiser
+    author_email="zer0g0ld@proton.me",
     description="🔍 ZNetScan - Scanner de Rede Inteligente com detecção de MAC randomizado e fingerprint",
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
@@ -66,13 +117,26 @@ setup(
         "requests>=2.31.0",
         "ipaddress>=1.0.23",
     ],
+    # Dependências para compilação (opcionais)
+    extras_require={
+        "core": ["setuptools>=42.0.0"],
+    },
+    cmdclass={
+        'install': CustomInstallCommand,
+        'develop': CustomDevelopCommand,
+    },
+    # Inclui a biblioteca compilada
+    package_data={
+        'core': ['*.so', '*.dylib'],
+    },
+    include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: System Administrators",
         "Intended Audience :: Information Technology",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS",
+        "Operating System :: Android",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
@@ -80,13 +144,14 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: C",
+        "Programming Language :: Assembly",
         "Topic :: System :: Networking",
         "Topic :: System :: Networking :: Monitoring",
         "Topic :: Security",
     ],
     python_requires=">=3.7",
-    keywords="network scanner, arp, mac randomizer, fingerprint, network monitoring, security",
+    keywords="network scanner, arp, mac randomizer, fingerprint, network monitoring, security, termux",
     license="GPL-3.0",
-    include_package_data=True,
-    zip_safe=False,
+    zip_safe=False,  # Necessário para ctypes carregar .so
 )
