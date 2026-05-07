@@ -4,6 +4,8 @@ Network Scanner - Ferramenta modular para escaneamento de rede
 Versão completa com todos os módulos, análise de MAC randomizado e fingerprint
 """
 
+__version__ = "2.0.0"
+
 import sys
 import argparse
 from typing import List, Dict
@@ -73,7 +75,7 @@ def main():
                        help='Show history of a specific device')
     
     # Versão
-    parser.add_argument('-v', '--version', action='version', version='ZNetScan v1.2.2')
+    parser.add_argument('-v', '--version', action='version', version=f"ZNetScan v{__version__}")
     
     args = parser.parse_args()
     
