@@ -91,7 +91,7 @@ znet help
 
 setup(
     name="znetscan",
-    version="2.0.0rc3",  # Versão Release Candidate
+    version="2.0.0",  # Versão Release Candidate
     author="Zer0G0ld",
     author_email="zer0g0ld@proton.me",
     description="🔍 ZNetScan - Scanner de Rede Inteligente com detecção de MAC randomizado e fingerprint",
